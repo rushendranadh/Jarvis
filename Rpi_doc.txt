@@ -1,0 +1,42 @@
+Raspberry Pi based Home automation - mark#1
+
+Sending commands to R-Pi from a bluetooth keyboard
+
+Command:
+	<device name> <operation>
+
+Device list:
+	TV
+	Fan
+	Motor
+	Light
+	Play
+#	Stop
+
+Operations allowed:
+	For fan:
+		on, off, up, down, Nill(no command)
+	For play:
+		any folder name (full name or part of it)
+	For stop:
+		no operations (play or water)
+	Remaining:
+		on, off, Nill(no command)
+
+Pins:
+	1-9	:	output
+	14-19	:	input
+	13	:	Error led
+	10-12	:	reserved
+
+-> Creating threads for water(while[1]), error(blinks an led 3 times), play(plays list of songs by taking full or a part of folder name)
+
+-> In case of error call a function (log_error), it will trigger an led to blink for 3 times
+   and it updates a file(Err_log.txt) with the string that we are passing while calling that function.
+
+
+Raspberry Pi based Home automation - mark#2
+
+Sending commands to R-Pi from mobile android app (uses wifi hotspot)
+
+
