@@ -242,7 +242,7 @@ def log_error(string):
 
 
 
-
+"""
 class play_cla(tha.Thread):
 	def __init__(self):
 		global name, events
@@ -268,4 +268,4 @@ def analyze_test(temp):
 	return False
 
 
-
+"""
