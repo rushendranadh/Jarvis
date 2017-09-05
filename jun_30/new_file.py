@@ -4,6 +4,27 @@ from classes import low, high, dev_pins, music_path, water_v, play_v, device, op
 from classes import er_pin, u_e, o_e, o_f						#Variables
 
 
+class switch():
+	def __init__(self, name):
+		global dev_pins
+		self.name = name
+		print(self.name)
+		self.pin = dev_pins[name]
+		print(self.pin)
+		self.__status = get()
+
+	def get(self, g_pin):
+		return pi.digitalRead(g_pin)			#get pin status(low/high)
+
+	def toggle(self, state, t_pin):
+		global low, high
+		i = low
+		if state:
+			i = high
+		pi.digitalWrite(pin, i)				#make pin high(1)
+		if get(t_pin) == i:
+			self.__status = i
+
 class fan(switch):
 	__f_state = 0
 	def __init__(self, name):
@@ -62,26 +83,6 @@ class fan(switch):
 		if __f_state != var:
 			log("Executing the command\n\t"+str(device+" "+operation)+".").start()
 		return True
-
-class switch():
-	__status = 0
-	def __init__(self, name):
-		global dev_pins
-		self.name = name
-		self.pin = dev_pins[name]
-		self.__status = get()
-
-	def get(self, g_pin = self.pin):
-		return pi.digitalRead(g_pin)			#get pin status(low/high)
-
-	def toggle(self, state, t_pin = self.pin):
-		global low, high
-		i = low
-		if state:
-			i = high
-		pi.digitalWrite(pin, i)				#make pin high(1)
-		if get(t_pin) == i:
-			self.__status = i
 	
 class play(th.Thread):
 	def __init__(self, dir_n):
@@ -112,7 +113,7 @@ def play_d(dir_name):
 def error_led():
 	global low, high, er_pin
 	pi.digitalWrite(er_pin, low)			#make pin 13 low
-	for i in range(0, 3):
+	for i in range(0, 3):				#blink LED 3 times
 		time.sleep(0.5)				#delay 0.5sec
 		pi.digitalWrite(er_pin, high)		#make pin high
 		time.sleep(0.5)
@@ -147,7 +148,7 @@ def water_d(sw):
 				sw.toggle(low)					#turn off
 		time.sleep(300)							#5 minutes
 
-class water(threading.Thread, switch):
+class water(th.Thread, switch):
 	def __init__(self, pin):
 		th.Thread.__init__(self)
 		self.pin = pin

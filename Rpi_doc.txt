@@ -10,7 +10,7 @@ Device list:
 	Fan
 	Motor
 	Light
-	Play
+#	Play
 #	Stop
 
 Operations allowed:
@@ -19,24 +19,73 @@ Operations allowed:
 	For play:
 		any folder name (full name or part of it)
 	For stop:
-		no operations (play or water)
+		no operations (to stop player or motor)
 	Remaining:
 		on, off, Nill(no command)
 
 Pins:
 	1-9	:	output
-	14-19	:	input
+	14-18	:	input
 	13	:	Error led
-	10-12	:	reserved
+	10-12	:	Reserved
 
--> Creating threads for water(while[1]), error(blinks an led 3 times), play(plays list of songs by taking full or a part of folder name)
+-> Creating threads for water(while[event]), error(blinks an led 3 times), play(plays list of songs by taking full or a part of folder name)
 
--> In case of error call a function (log_error), it will trigger an led to blink for 3 times
+-> In case of error call a function (class log), it will trigger an led to blink for 3 times
    and it updates a file(Err_log.txt) with the string that we are passing while calling that function.
 
 
 Raspberry Pi based Home automation - mark#2
 
-Sending commands to R-Pi from mobile android app (uses wifi hotspot)
+-> Sending commands to R-Pi from mobile android app (uses wifi hotspot)
+-> Setup password for application to control devices.
+
+Voice synthesiser:
+
+Google speech synthesiser:
+
+-> Support 64 different languages
+-> Can read text without length limit
+-> Can read text from standard input
+-> Automatically pre download the next sentences while playing the current one to avoid long pauses between sentences
+-> Automatically store downloaded data in a local cache
+-> Can apply any SoX effects to the audio while playing it
+
+
+Installation:
+
+-> pip3 install google_speech
+-> sudo apt-get install sox libsox-fmt-mp3
+
+Usage:
+
+-> google_speech -h #help
+-> google_speech -l en "Text to speak" #basic command
+
+Available options
+
+-> delay <number> #provides delay between speech or multiple occurences of speech
+-> repeat <number> #repeat the speech
+-> speed <number> #float or integer, alters the speech speed
+-> ...
+
+Example google_speech command(girl voice):
+google_speech -l en "Hello, It is a stupid robot voice" -e speed 1 overdrive 10 echo 0.8 0.7 6 0.7 echo 0.8 0.7 10 0.7 echo 0.8 0.7 12 0.7 echo 0.8 0.88 12 0.7 echo 0.8 0.88 30 0.7 echo 0.6 0.6 60 0.7 repeat 2
+
+
+GSM module for messages and calls:
+
+Module SIM800:
+
+
+
+
+
+
+
+
+
+
+
 
 

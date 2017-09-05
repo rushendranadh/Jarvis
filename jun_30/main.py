@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from modules import os, motor, setup, analyze, check	# importing modules
+from new_file import *	# importing modules
+from classes import analyze
 
 
 """
