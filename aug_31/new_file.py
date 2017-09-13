@@ -5,10 +5,13 @@ from modules import er_pin, u_e, o_e, o_f						#Variables
 from modules import mail_from_address, smtplib, MIMEMultipart, MIMEText
 
 class Switch():
-	def __init__(self, name):
+	def __init__(self, name, room = None):
 		global dev_pins
 		self.name = name
-		self.pin = dev_pins[name]
+		if room:
+			self.pin = dev_pins[room][name]
+		else:
+			self.pin = dev_pins[name]
 		self.__status = self.get()
 
 	def get(self, g_pin=low):
@@ -28,11 +31,16 @@ class Switch():
 			self.__status = i
 
 class Fan(Switch):
-	def __init__(self, name):
+	def __init__(self, name, room = None):
 		global dev_pins
 		self.name = name
-		self.l_bit = dev_pins[name][0]
-		self.h_bit = dev_pins[name][1]
+		if room:
+			self.l_bit = dev_pins[room][name][0]
+			self.h_bit = dev_pins[room][name][1]
+		else:
+			self.l_bit = dev_pins[name][0]
+			self.h_bit = dev_pins[name][1]
+
 		self.__status = low
 	def fan_d(self):
 		global low, high, device, operation
@@ -185,7 +193,8 @@ def mail(message, to_address):
 	try:
 		status = server.sendmail(mail_from_address, to_address, text)
 	except Exception:
-		status_message = "'Mail undelivered to "+to_address+"'"
+		status_message = "'Mail is not delivered to "+to_address+"'"
+		#Log(status_message).start()
 	server.quit()
 	if not status:
 		status_message = "'Mail sent successfully.'"

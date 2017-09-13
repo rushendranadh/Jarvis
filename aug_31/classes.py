@@ -1,9 +1,9 @@
 
 from new_file import Switch, Play, Log, Fan
-from modules import low, high, er_pin, dev_pins, dev_objs, ops, device, operation, default_name, water_v, play_v
+from modules import low, high, er_pin, dev_pins, dev_objs, ops, room, device, operation, default_name, water_v, play_v
 
 def setup():
-	global low, high, er_pin
+	global low, high, er_pin, dev_pins, dev_objs
 	pi.wiringPiSetupGpio()				#for gpio pin numbering
 	pi.pinMode(er_pin, low)				#setmode output(write) (pin 13)
 	pi.digitalWrite(er_pin, low)
@@ -13,23 +13,46 @@ def setup():
 	for i in range(14,19):
 		pi.pinMode(i, high)			#setmode input(read) (pins 14-19)
 
+	dev_objs = dev_pins
+	for i in dev_pins.keys():
+		if not dev_pins[i]:
+			pass	#play, stop
+		elif isinstance(dev_pins[i], dict):
+			for j in dev_pins[i]:
+				if j == "fan":
+					dev_objs[i][j] = Fan(j, i)
+				else:
+					dev_objs[i][j] = Switch(j, i)
+				print(i, j)
+		else:
+			if i == "fan":
+				dev_objs[i] = Fan(i)
+			else:
+				dev_objs[i] = Switch(i)
+			print(i)
+
 def analyze(temp):
-	global dev_objs, ops, device, operation, default_name, water_v, play_v, low, high
+	global dev_objs, ops, room, device, operation, default_name, water_v, play_v, low, high
 	temp = temp.lower().split()
 	device = ''
 	operation = ''
+	room = ''
+
 	for i in temp:
 		if i in dev_pins.keys():
+			room = i
+		elif room and i in dev_pins[room].keys():
+			device = i
+		elif not room and i in dev_pins["others"].keys():
 			device = i
 		elif i in ops.keys():
 			operation = ops[i]
-		elif device and operation:
+		elif device and operation and room:
 			break
 	if not device:
 		pass
 		#Log("Invalid command\n\t"+str(temp)+".").start()
 		return False
-	print (device, operation)
 	if not dev_pins[device]:
 		try:
 			operation = temp[1]
