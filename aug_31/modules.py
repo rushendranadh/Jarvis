@@ -1,12 +1,12 @@
 import os
 import re
+import copy
 import time
 import threading as thread
 import wiringpi as pi
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
 
 dev_pins = {"hall":{"light":1, "tv":4, "cooler":6, "fan":[2, 3]}, "kitchen":{"light":7, "fan":[8, 9]}, "others":{"motor":5, "light": 8, "fan":[6, 7], "play":0, "stop":0}}
 
@@ -19,6 +19,7 @@ music_path = "../../../home/rushendranadh/Downloads/"		#Change according to song
 default_name = "default"					#Default songs folder name
 low, high = 0, 1
 play_v, water_v = low, low
+used_pins = []
 device = ''
 operation = ''
 room = ''

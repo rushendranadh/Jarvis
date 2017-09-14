@@ -24,10 +24,9 @@ Operations allowed:
 		on, off, Nill(no command)
 
 Pins:
-	1-9	:	output
+	1-12	:	output
 	14-18	:	input
 	13	:	Error led
-	10-12	:	Reserved
 
 -> Creating threads for water(while[event]), error(blinks an led 3 times), play(plays list of songs by taking full or a part of folder name)
 

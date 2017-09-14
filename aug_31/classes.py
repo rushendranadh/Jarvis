@@ -1,35 +1,25 @@
 
 from new_file import Switch, Play, Log, Fan
-from modules import low, high, er_pin, dev_pins, dev_objs, ops, room, device, operation, default_name, water_v, play_v
+from modules import low, high, er_pin, dev_pins, dev_objs, ops, room, device, operation, default_name, water_v, play_v, copy
 
-def setup():
+def startup():
 	global low, high, er_pin, dev_pins, dev_objs
 	pi.wiringPiSetupGpio()				#for gpio pin numbering
 	pi.pinMode(er_pin, low)				#setmode output(write) (pin 13)
 	pi.digitalWrite(er_pin, low)
-	for i in range(1,10):
+	for i in range(1,13):
 		pi.pinMode(i, low)			#setmode output(write) (pins 1-9)
 		pi.digitalWrite(i, low)			#make pin 'i' low
 	for i in range(14,19):
 		pi.pinMode(i, high)			#setmode input(read) (pins 14-19)
 
-	dev_objs = dev_pins
+	dev_objs = copy.deepcopy(dev_pins)
 	for i in dev_pins.keys():
-		if not dev_pins[i]:
-			pass	#play, stop
-		elif isinstance(dev_pins[i], dict):
-			for j in dev_pins[i]:
-				if j == "fan":
-					dev_objs[i][j] = Fan(j, i)
-				else:
-					dev_objs[i][j] = Switch(j, i)
-				print(i, j)
-		else:
-			if i == "fan":
-				dev_objs[i] = Fan(i)
+		for j in dev_pins[i]:
+			if j == "fan":
+				dev_objs[i][j] = Fan(j, i)
 			else:
-				dev_objs[i] = Switch(i)
-			print(i)
+				dev_objs[i][j] = Switch(j, i)
 
 def analyze(temp):
 	global dev_objs, ops, room, device, operation, default_name, water_v, play_v, low, high
@@ -50,9 +40,10 @@ def analyze(temp):
 		elif device and operation and room:
 			break
 	if not device:
-		pass
-		#Log("Invalid command\n\t"+str(temp)+".").start()
+		Log("Invalid command\n\t"+str(temp)+".").start()
 		return False
+	if not room:
+		room = "others"
 	if not dev_pins[device]:
 		try:
 			operation = temp[1]
@@ -71,7 +62,7 @@ def analyze(temp):
 					play_v = high
 				else:
 					pass
-					#Log("Unable to start play thread.").start()	#Create and run error thread
+					Log("Unable to start play thread.").start()	#Create and run error thread
 
 		elif device == "stop":
 			if "play" in operation and play_v and p.isAlive():
@@ -79,7 +70,7 @@ def analyze(temp):
 				play_v = low
 				if p.isAlive():
 					play_v = high
-					#Log("Unable to stop play thread.").start()
+					Log("Unable to stop play thread.").start()
 			elif operation == "motor":
 				water_v = low
 		return False
@@ -98,7 +89,7 @@ def check():
 			dev = Switch(device)
 			dev_objs[device] = dev
 	if device == "fan":
-		dev.fan_d()
+		dev.fan_toggle()
 		return True
 	elif not operation:
 		operation = high
@@ -110,7 +101,7 @@ def check():
 
 	if dev.get() != operation:				#checking command execution
 		pass
-		#Log("Executing the command\n\t"+device+" "+str(operation)+".").start()
+		Log("Executing the command\n\t"+room+" "+device+" "+str(operation)+".").start()
 	return True
 
 """	for i, j in zip(cycle(dev_pins.keys()), ops.keys()):
