@@ -83,7 +83,6 @@ class Fan(Switch):
 				self.__status = low
 				var = low
 		if self.__status != var:
-			pass
 			Log("Executing the command\n\t"+room+" "+device+" "+str(operation)+".").start()
 		return True
 	def get(self):
@@ -101,7 +100,7 @@ def play_d(dir_name):
 	file_list = []
 	check_name = re.compile('.*'+dir_name+'.*', re.I)
 	for root, dirs, files in os.walk(music_path):
-		found = filter(lambda x: (check_name.match(x)), dirs)
+		found = list(filter(lambda x: (check_name.match(x)), dirs))
 		if found:
 			path = os.path.join(root, found.pop())
 			file_list = os.listdir(path)
@@ -112,7 +111,6 @@ def play_d(dir_name):
 			print(s_cmd)
 #			os.system(s_cmd)
 	else:
-		pass
 		Log("Album not found with name \""+dir_name+"\".").start()
 	return
 

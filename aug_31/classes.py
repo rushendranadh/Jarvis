@@ -1,6 +1,6 @@
 
 from new_file import Switch, Play, Log, Fan
-from modules import low, high, er_pin, dev_pins, dev_objs, ops, room, device, operation, default_name, water_v, play_v, copy
+from modules import low, high, er_pin, dev_pins, dev_objs, ops, room, device, operation, default_name, water_v, play_v, copy, re
 
 def startup():
 	global low, high, er_pin, dev_pins, dev_objs
@@ -23,27 +23,24 @@ def startup():
 
 def analyze(temp):
 	global dev_objs, ops, room, device, operation, default_name, water_v, play_v, low, high
-	temp = temp.lower().split()
 	device = ''
 	operation = ''
 	room = ''
 
-	for i in temp:
-		if i in dev_pins.keys():
-			room = i
-		elif room and i in dev_pins[room].keys():
-			device = i
-		elif not room and i in dev_pins["others"].keys():
-			device = i
-		elif i in ops.keys():
-			operation = ops[i]
-		elif device and operation and room:
-			break
+	f = list(filter(lambda x: re.search(x, temp, re.I), dev_pins.keys()))
+	room = f.pop() if f else "others"
+	f = list(filter(lambda x: re.search(x, temp), dev_pins[room].keys()))
+	device = f.pop() if f else None
+	f = list(filter(lambda x: re.search(x, temp), ops.keys()))
+	operation = ops[f.pop()] if f else None
+
 	if not device:
 		Log("Invalid command\n\t"+str(temp)+".").start()
 		return False
-	if not room:
-		room = "others"
+	else:
+		return True
+
+def toggle():
 	if not dev_pins[device]:
 		try:
 			operation = temp[1]
@@ -100,16 +97,8 @@ def check():
 		dev.toggle(operation)
 
 	if dev.get() != operation:				#checking command execution
-		pass
 		Log("Executing the command\n\t"+room+" "+device+" "+str(operation)+".").start()
 	return True
 
-"""	for i, j in zip(cycle(dev_pins.keys()), ops.keys()):
-		d_f = re.search(i, temp, re.I)
-		o_f = re.search(i, temp, re.I)
-		if d_f:
-			device = i
-		if o_f:
-			operation = i"""
 
 

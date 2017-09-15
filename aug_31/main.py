@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from new_file import motor, get, mail, start_setup	# importing modules
-from classes import analyze, check, startup
+from classes import analyze, toggle, startup, check
 from modules import os
 
 
