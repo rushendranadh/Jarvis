@@ -1,5 +1,5 @@
 
-from new_file import Switch, Play, Log, Fan
+from new_file import Switch, Play, Log, Fan, Play_speech
 from modules import low, high, er_pin, dev_pins, dev_objs, ops, room, device, operation, default_name, water_v, play_v, copy, re
 
 def startup():
@@ -15,30 +15,34 @@ def startup():
 
 	dev_objs = copy.deepcopy(dev_pins)
 	for i in dev_pins.keys():
-		for j in dev_pins[i]:
+		for j in dev_pins[i].keys():
 			if j == "fan":
 				dev_objs[i][j] = Fan(j, i)
 			else:
 				dev_objs[i][j] = Switch(j, i)
 
 def analyze(temp):
-	global dev_objs, ops, room, device, operation, default_name, water_v, play_v, low, high
+	global dev_pins, ops, room, device, operation
 	device = ''
 	operation = ''
 	room = ''
 
 	f = list(filter(lambda x: re.search(x, temp, re.I), dev_pins.keys()))
 	room = f.pop() if f else "others"
-	f = list(filter(lambda x: re.search(x, temp), dev_pins[room].keys()))
+
+	f = list(filter(lambda x: re.search(x, temp, re.I), dev_pins[room].keys()))
 	device = f.pop() if f else None
-	f = list(filter(lambda x: re.search(x, temp), ops.keys()))
+
+	f = list(filter(lambda x: re.search(x, temp, re.I), ops.keys()))
 	operation = ops[f.pop()] if f else None
 
 	if not device:
 		Log("Invalid command\n\t"+str(temp)+".").start()
+		Play_speech("Device not found").start()
 		return False
 	else:
-		return True
+		pass
+		#return True
 
 def toggle():
 	if not dev_pins[device]:
@@ -58,7 +62,6 @@ def toggle():
 				if p.isAlive():
 					play_v = high
 				else:
-					pass
 					Log("Unable to start play thread.").start()	#Create and run error thread
 
 		elif device == "stop":
@@ -75,16 +78,9 @@ def toggle():
 		return True
 
 def check():
-	global dev_objs, device, operation
-	try:
-		dev = dev_objs[device]
-	except KeyError:
-		if device == "fan":
-			dev = Fan(device)
-			dev_objs[device] = dev
-		else:
-			dev = Switch(device)
-			dev_objs[device] = dev
+	global dev_objs, room, device, operation
+
+	dev = dev_objs[room][device]
 	if device == "fan":
 		dev.fan_toggle()
 		return True

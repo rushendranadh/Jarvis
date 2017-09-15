@@ -9,11 +9,12 @@ class Switch():
 		global dev_pins
 		self.name = name
 		self.pin = dev_pins[room_name][name]
-		#self.__status = self.get()
+		self.__status = self.get()
 
 	def get(self, g_pin=low):
 		if not g_pin:
 			g_pin = self.pin
+		return True
 		return pi.digitalRead(g_pin)			#get pin status(low/high)
 
 	def toggle(self, state, t_pin=low):
@@ -23,6 +24,7 @@ class Switch():
 			i = high
 		if not t_pin:
 			t_pin = self.pin
+		return True
 		pi.digitalWrite(t_pin, i)				#make pin high(1)
 		if self.get(t_pin) == i:
 			self.__status = i
@@ -187,12 +189,12 @@ def mail(message, to_address):
 	try:
 		status = server.sendmail(mail_from_address, to_address, text)
 	except Exception:
-		status_message = "'Mail is not delivered to "+to_address+"'"
+		status_message = "Mail is not delivered to "+to_address
 		Log(status_message).start()
 	server.quit()
 	if not status:
-		status_message = "'Mail sent successfully.'"
-	os.system("google_speech -l en "+ status_message)
+		status_message = "Mail sent successfully."
+	Play_speech(status_message).start()
 
 def get(string):
 	t_data = time.localtime()
@@ -211,10 +213,10 @@ def get(string):
 		hours = str(hours)
 		minutes = minutes +" AM"
 	if string == 'time':
-		time_get = "'time is "+hours+" "+minutes+"'"
+		time_get = "time is "+hours+" "+minutes
 		Play_speech(time_get).start()
 	if string == 'day':
-		day_get = "'today is "+day[t_data[6]]+" "+str(t_data[2])+" "+month[t_data[1]]+" "+str(t_data[0])+"'"
+		day_get = "today is "+day[t_data[6]]+" "+str(t_data[2])+" "+month[t_data[1]]+" "+str(t_data[0])
 		Play_speech(day_get).start()
 
 class Play_speech(thread.Thread):
@@ -226,6 +228,7 @@ class Play_speech(thread.Thread):
 		play_speech_d(self.message, self.repeat)
 
 def play_speech_d(string, repeat):
+	string = "'"+string+"'"
 	os.system("google_speech -l en "+string+" -e repeat "+str(repeat))
 	return
 
@@ -245,7 +248,7 @@ class Setup():
 			return used
 
 	def get_pin(self):
-		global dev_pins, used_pins
+		global used_pins
 		for i in range(1,13):
 			if i not in used_pins:
 				print (i)
@@ -271,9 +274,9 @@ class Setup():
 			dev_pins[room_name][device_name] = pin_number
 			dev_objs[room_name][device_name]= Switch(device_name, room_name)
 		if dev_pins[room_name][device_name]:
-			Play_speech("'Device added successfully'").start()
+			Play_speech("Device added successfully").start()
 		else:
-			Play_speech("'Device not added'").start()
+			Play_speech("Device not added").start()
 
 	def remove_device(self, device_name, room_name= None):
 		global dev_pins, dev_objs
@@ -282,20 +285,20 @@ class Setup():
 		del dev_pins[room_name][device_name]
 		del dev_objs[room_name][device_name]
 		if not dev_pins[room_name][device_name]:
-			Play_speech("'Device removed successfully'").start()
+			Play_speech("Device removed successfully").start()
 		else:
-			Play_speech("'Device not removed'").start()
+			Play_speech("Device not removed").start()
 
 def start_setup():
 	global dev_pins, dev_objs
 	pwd = "1"
 	password = input("Enter password: ")
 	if pwd != password:
-		Play_speech("'Please check your password'", 1).start()
+		Play_speech("Please check your password", 1).start()
 		print("Wrong password !!!")
 		return False
 	else:
-		set_up = Setup()
+		s = Setup()
 		dev_objs = copy.deepcopy(dev_pins)
 		selection = ''
 		while selection != 'x':
@@ -307,11 +310,11 @@ def start_setup():
 			elif selection == 'a':
 				room_name = input("Enter room: ").strip()
 				device_name = input("Enter device: ").strip()
-				set_up.add_device(device_name, room_name)
+				s.add_device(device_name, room_name)
 			elif selection == 'r':
 				room_name = input("Enter room: ").strip()
 				device_name = input("Enter device: ").strip()
-				set_up.remove_device(device_name, room_name)
+				s.remove_device(device_name, room_name)
 		return
 
 

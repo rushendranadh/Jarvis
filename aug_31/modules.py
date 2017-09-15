@@ -8,7 +8,8 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-dev_pins = {"hall":{"light":1, "tv":4, "cooler":6, "fan":[2, 3]}, "kitchen":{"light":7, "fan":[8, 9]}, "others":{"motor":5, "light": 8, "fan":[6, 7], "play":0, "stop":0}}
+dev_pins = {"hall":{"light":1, "tv":4, "cooler":6, "fan":[2, 3]}, "kitchen":{"light":7, "fan":[8, 9]}, "others":{"motor":5, "light": 8, "fan":[6, 7]}}
+other_ops=[ "play", "stop", "day", "time", "mail"]
 
 dev_objs = {}										#Device_name : object
 er_pin = 13										#Error pin
