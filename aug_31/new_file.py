@@ -1,15 +1,34 @@
 
-from modules import thread, pi, os, time							#Modules
-from modules import low, high, dev_pins, dev_objs, music_path, water_v, play_v, device, operation, music_path
-from modules import er_pin, u_e, o_e, o_f, used_pins						#Variables
-from modules import mail_from_address, smtplib, MIMEMultipart, MIMEText, copy
+from modules import thread, pi, os, time, re							#Modules
+from modules import low, high, dev_pins, music_path, water_v, play_v, device, operation, music_path
+from modules import er_pin, u_e, o_e, o_f, friends, default_path						#Variables
+from modules import mail_from_address, smtplib, MIMEMultipart, MIMEText
+
+
+def startup():
+	global low, high, er_pin, dev_pins
+#	pi.wiringPiSetupGpio()				#for gpio pin numbering
+#	pi.pinMode(er_pin, low)				#setmode output(write) (pin 13)
+#	pi.digitalWrite(er_pin, low)
+#	for i in range(1,13):
+#		pi.pinMode(i, low)			#setmode output(write) (pins 1-9)
+#		pi.digitalWrite(i, low)			#make pin 'i' low
+#	for i in range(14,19):
+#		pi.pinMode(i, high)			#setmode input(read) (pins 14-19)
+	for i in dev_pins.keys():
+		for j in dev_pins[i].keys():
+			if j == "fan":
+				dev_pins[i][j]["obj"] = Fan(j, i)
+			else:
+				dev_pins[i][j]["obj"] = Switch(j, i)
+	Play_speech("All systems active, command mode, activated").start()
 
 class Switch():
 	def __init__(self, name, room_name):
 		global dev_pins
 		self.name = name
-		self.pin = dev_pins[room_name][name]
-		self.__status = self.get()
+		self.pin = dev_pins[room_name][name]["pin"]
+		self.status = self.get()
 
 	def get(self, g_pin=low):
 		if not g_pin:
@@ -19,76 +38,88 @@ class Switch():
 
 	def toggle(self, state, t_pin=low):
 		global low, high
-		i = low
-		if state:
-			i = high
+		ops = {'on':high, 'off': low}
+		try:
+			i = ops[state]
+		except KeyError:
+			return False
 		if not t_pin:
 			t_pin = self.pin
 		return True
 		pi.digitalWrite(t_pin, i)				#make pin high(1)
 		if self.get(t_pin) == i:
-			self.__status = i
+			self.status = i
+		#return True
 
 class Fan(Switch):
 	def __init__(self, name, room_name):
 		global dev_pins
 		self.name = name
-		self.l_bit = dev_pins[room_name][name][0]
-		self.h_bit = dev_pins[room_name][name][1]
-		self.__status = low
-	def fan_toggle(self):
-		global low, high, device, operation
+		self.l_bit = dev_pins[room_name][name]["pin"][0]
+		self.h_bit = dev_pins[room_name][name]["pin"][1]
+		self.status = low
+
+	def get(self, pin=0):
+		fan_ops = {False:0, True:1, "up":2, "down":3}
+		if pin:
+			return pi.digitalRead(pin)
+		g_l = pi.digitalRead(self.l_bit)
+		g_h = pi.digitalRead(self.h_bit)
+		if not (g_l and g_h):
+			return False
+		elif g_l and g_l:
+			return True
+		else:
+			return list(fan_ops.keys())[list(fan_ops.values()).index(self.status)]
+
+	def fan_toggle(self, op):
+		global low, high
 		fan_ops = {False:0, True:1, "up":2, "down":3}
 		try:
-			var = fan_ops[operation]
+			var = fan_ops[op]
 		except KeyError:
 			var = 4
-		if self.__status == var:
+		if self.status == var:
 			return True
 		elif var == 1:
-			if not __f_state:
-	#			self.toggle(high, self.l_bit)			#fan speed
-				self.toggle(high, self.h_bit)
-				self.__status = var
+#			self.toggle(high, self.l_bit)			#fan speed
+			self.toggle(high, self.h_bit)
 		elif not var:
 			self.toggle(low, self.l_bit)
 			self.toggle(low, self.h_bit)
-			self.__status = var
 		elif var == 2:
-			if get(self.l_bit) and (not get(self.h_bit)):
+			if self.get(self.l_bit) and (not self.get(self.h_bit)):
 				self.toggle(high, self.h_bit)
 				self.toggle(low, self.l_bit)
-			elif (not get(self.l_bit)) and get(self.h_bit):
+			elif (not self.get(self.l_bit)) and self.get(self.h_bit):
 				self.toggle(high, self.l_bit)
-			elif not (get(self.l_bit) and get(self.h_bit)):
+			elif not (self.get(self.l_bit) and self.get(self.h_bit)):
 				self.toggle(high, self.l_bit)
-				self.toggle(low, self.h_bit)
-			self.__status = var
+			elif self.get(self.l_bit) and self.get(self.h_bit):
+				pass
 		elif var == 3:
-			if get(self.l_bit) and get(self.h_bit):
+			if self.get(self.l_bit) and self.get(self.h_bit):
 				self.toggle(low, self.l_bit)
-			elif (not get(self.l_bit)) and get(self.h_bit):
+			elif (not self.get(self.l_bit)) and self.get(self.h_bit):
 				self.toggle(low, self.h_bit)
 				self.toggle(high, self.l_bit)
-			elif get(self.l_bit) and (not get(self.h_bit)):
+			elif self.get(self.l_bit) and (not self.get(self.h_bit)):
 				self.toggle(low, self.l_bit)
-			self.__status = var
+			elif not (self.get(self.l_bit) and self.get(self.h_bit)):
+				pass
 		elif var == 4:
-			if not self.__status:
+			if not self.status:
 	#			self.toggle(high, self.l_bit)			#fan speed
 				self.toggle(high, self.h_bit)
-				self.__status = high
 				var = high
 			else:
 				self.toggle(low, self.l_bit)
 				self.toggle(low, self.h_bit)
-				self.__status = low
-				var = low
-		if self.__status != var:
-			Log("Executing the command\n\t"+room+" "+device+" "+str(operation)+".").start()
+				var = low			
+		self.status = var
+		if self.get() != fan_ops[op]:
+			return False
 		return True
-	def get(self):
-		return self.__status
 	
 class Play(thread.Thread):
 	def __init__(self, dir_n):
@@ -98,22 +129,36 @@ class Play(thread.Thread):
 		play_d(self.dir_name)
 
 def play_d(dir_name):
-	global music_path
+	global music_path, default_path
 	file_list = []
-	check_name = re.compile('.*'+dir_name+'.*', re.I)
+	if dir_name and (dir_name != "songs"):
+		search = re.search('songs\\s?from?\\s?(.*)?|(.*)', dir_name)
+		if search:
+			dir_name = search.group(1) or search.group(2)
+	else:
+		dir_name = default_path
+	check_dir = re.compile('.*'+dir_name+'.*', re.I)
+	check_song = re.compile('.*'+dir_name+'.*.mp3', re.I)
 	for root, dirs, files in os.walk(music_path):
-		found = list(filter(lambda x: (check_name.match(x)), dirs))
-		if found:
-			path = os.path.join(root, found.pop())
-			file_list = os.listdir(path)
+		found_dir = list(filter(lambda x: (check_dir.match(x)), dirs))
+		found_song = list(filter(lambda x: (check_song.match(x)), files))
+		if found_dir:
+			path = os.path.join(root, found_dir.pop())
+			file_list = list(filter(lambda x: re.search('.*.mp3', x), os.listdir(path)))
+			break
+		if found_song:
+			path = root
+			file_list.append(found_song.pop())
 			break
 	if file_list:
 		for i in file_list:
-			s_cmd = "vlc" + path + '/' + i
+			s_cmd = "vlc " + path +'/'+ i
 			print(s_cmd)
-#			os.system(s_cmd)
+			time.sleep(30)
+	#		os.system(s_cmd)
 	else:
 		Log("Album not found with name \""+dir_name+"\".").start()
+		Play_speech("Album "+dir_name+" not found").start()
 	return
 
 def error_led():
@@ -173,51 +218,64 @@ def motor():
 			water_v = low
 			Log("Unable to start water thread.").start()
 
-def mail(message, to_address):
-	global mail_from_address
+class E_mail(thread.Thread):
+	def __init__(self, msg, to):
+		thread.Thread.__init__(self)
+		self.message = msg
+		self.to = to
+	def run(self):
+		mail(self.message, self.to)
+
+def mail(message, to):
+	global mail_from_address, friends
+
 	msg = MIMEMultipart()
 	msg['From'] = mail_from_address
-	msg['To'] = to_address
-	msg['Subject'] = "Test subject"
+	msg['To'] = friends[to]["email"]
+	msg['Subject'] = "Message from Rishi"
 
 	msg.attach(MIMEText(message, 'plain'))
 	text = msg.as_string()
-	server = smtplib.SMTP("smtp.gmail.com", 587)
-	server.starttls()
-	server.login(mail_from_address, "9676852995")
-	status={to_address:message}
+	s = smtplib.SMTP("smtp.gmail.com", 587)
+	s.starttls()
+	s.login(mail_from_address, "9676852995")
+	status={msg['To']:message}
 	try:
-		status = server.sendmail(mail_from_address, to_address, text)
+		status = s.sendmail(mail_from_address, msg['To'], text)
 	except Exception:
-		status_message = "Mail is not delivered to "+to_address
+		status_message = "Mail is not delivered to, "+msg['To']
 		Log(status_message).start()
-	server.quit()
+	s.quit()
 	if not status:
 		status_message = "Mail sent successfully."
 	Play_speech(status_message).start()
 
-def get(string):
+	return
+
+def play_string(string):
 	t_data = time.localtime()
 #	t_data[year, month_num, m_day, h, m, sec, w_day, y_day, isdst]
 	day = {0:'monday', 1:'tuesday', 2:'wednesday', 3:'thursday', 4:'friday', 5:'saturday', 6:'sunday'}
 	month = {1:"january", 2:"february", 3:"march", 4:"april", 5:"may", 6:"june", 7:"july", 8:"august", 9:"september", 10:"october", 11:"november", 12:"december"}
 	hours = t_data[3]
 	minutes = str(t_data[4])
-	if not hours:
-		hours = str(12)
-		minutes = minutes +" AM"
-	elif hours >= 12:
+	if hours >= 12:
 		hours = str(hours-12)
 		minutes = minutes +" PM"
+	elif not hours:
+		hours = str(12)
+		minutes = minutes +" AM"
 	else:
 		hours = str(hours)
 		minutes = minutes +" AM"
 	if string == 'time':
 		time_get = "time is "+hours+" "+minutes
 		Play_speech(time_get).start()
-	if string == 'day':
-		day_get = "today is "+day[t_data[6]]+" "+str(t_data[2])+" "+month[t_data[1]]+" "+str(t_data[0])
+	elif string == 'day':
+		day_get = "today is, "+day[t_data[6]]+" "+str(t_data[2])+" "+month[t_data[1]]+" "+str(t_data[0])
 		Play_speech(day_get).start()
+	else:
+		Play_speech(string).start()
 
 class Play_speech(thread.Thread):
 	def __init__(self, msg, rep=0):
@@ -225,22 +283,30 @@ class Play_speech(thread.Thread):
 		self.message = msg
 		self.repeat = rep
 	def run(self):
-		play_speech_d(self.message, self.repeat)
+		play_speech_d(self.message)
 
-def play_speech_d(string, repeat):
+def play_speech_d(string):
 	string = "'"+string+"'"
-	os.system("google_speech -l en "+string+" -e repeat "+str(repeat))
+	try:
+		os.system("google_speech -l en "+string+" -e echo 0.98 0.97 0.66 0.64 echo 0.95 0.91 0.63 0.61 echo 0.92 0.87 0.59 0.58")
+	except RuntimeError:
+		Log("Cannot play "+string).start()
 	return
 
 class Setup():
 	def __init__(self):
-		global used_pins
-		used_pins = self.available_pins()
+		self.used_pins = self.available_pins()
+
+	def available_devs(self):
+		global dev_pins
+		for i in dev_pins.keys():
+			print ("Devices in '"+i+"' are ", list(dev_pins[i].keys()))
 
 	def available_pins(self):
 		pins = []
-		for i in dev_pins.keys():
-			pins += list(dev_pins[i].values())
+		for r in dev_pins.keys():
+			for dev in dev_pins[r].keys():
+				pins.append(dev_pins[r][dev]["pin"])
 		else:
 			used = []
 			for i in pins:
@@ -248,64 +314,64 @@ class Setup():
 			return used
 
 	def get_pin(self):
-		global used_pins
 		for i in range(1,13):
-			if i not in used_pins:
+			if i not in self.used_pins:
 				print (i)
 				return i
 
 	def add_device(self, device_name, room_name= None):
-		global dev_pins, dev_objs, used_pins
+		global dev_pins
 		pin_number = []
 		if not room_name:
 			room_name = "others"
+		elif room_name not in dev_pins.keys():
+			dev_pins[room_name] = dict([(device_name, None)])
 		if device_name == "fan":
 			new_pin = self.get_pin()
 			pin_number.append(new_pin)
-			used_pins.append(new_pin)
+			self.used_pins.append(new_pin)
 			new_pin = self.get_pin()
 			pin_number.append(new_pin)
-			used_pins.append(new_pin)
-			dev_pins[room_name][device_name] = pin_number
-			dev_objs[room_name][device_name]= Fan(device_name, room_name)
+			self.used_pins.append(new_pin)
 		else:
 			pin_number = self.get_pin()
-			used_pins.append(pin_number)
-			dev_pins[room_name][device_name] = pin_number
-			dev_objs[room_name][device_name]= Switch(device_name, room_name)
+			self.used_pins.append(pin_number)
+		dev_pins[room_name][device_name] = dict([("pin", pin_number),("obj", None)])
 		if dev_pins[room_name][device_name]:
 			Play_speech("Device added successfully").start()
 		else:
 			Play_speech("Device not added").start()
 
-	def remove_device(self, device_name, room_name= None):
-		global dev_pins, dev_objs
-		if not room_name:
-			room_name = "others"
-		del dev_pins[room_name][device_name]
-		del dev_objs[room_name][device_name]
-		if not dev_pins[room_name][device_name]:
+	def remove_device(self, device_name, room_name= "others"):
+		global dev_pins
+		if (not device_name) or (not dev_pins.get(room_name)) or (device_name not in dev_pins[room_name].keys()):
+			print ("No device found.\n")
+			return None
+		elif device_name in dev_pins[room_name].keys():
+			del dev_pins[room_name][device_name]
+			if not dev_pins[room_name] and room_name != "others":
+				del dev_pins[room_name]
+		if (not dev_pins.get(room_name)) or (dev_pins.get(room_name) and (device_name not in dev_pins[room_name].keys())):
 			Play_speech("Device removed successfully").start()
 		else:
 			Play_speech("Device not removed").start()
 
 def start_setup():
-	global dev_pins, dev_objs
 	pwd = "1"
 	password = input("Enter password: ")
-	if pwd != password:
-		Play_speech("Please check your password", 1).start()
-		print("Wrong password !!!")
-		return False
-	else:
+	if pwd == password:
 		s = Setup()
-		dev_objs = copy.deepcopy(dev_pins)
 		selection = ''
 		while selection != 'x':
-			selection = input("Select :"+"\n"+"a : Add device"+"\n"+"r : Remove device"+"\n"+"x : Exit"+"\n")
+			print("Available devices are:")
+			s.available_devs()
+			selection = input("\nSelect :"+"\n"+"a : Add device"+"\n"+"r : Remove device"+"\n"+"x : Exit"+"\n")
 			selection = selection.lower()
 			if selection == 'x':
 				print ("Exiting...")
+				Play_speech("System rebooting").start()
+				time.sleep(2)
+				startup()
 				break
 			elif selection == 'a':
 				room_name = input("Enter room: ").strip()
@@ -315,8 +381,10 @@ def start_setup():
 				room_name = input("Enter room: ").strip()
 				device_name = input("Enter device: ").strip()
 				s.remove_device(device_name, room_name)
-		return
-
+	else:
+		Play_speech("Please check your password").start()
+		print("Wrong password !!!")
+	return False
 
 
 
