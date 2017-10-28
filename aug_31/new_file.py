@@ -1,8 +1,8 @@
 
 from modules import thread, pi, os, time, re							#Modules
 from modules import low, high, dev_pins, music_path, water_v, play_v, device, operation, music_path
-from modules import er_pin, u_e, o_e, o_f, friends, default_path						#Variables
-from modules import mail_from_address, smtplib, MIMEMultipart, MIMEText
+from modules import er_pin, u_e, o_e, o_f, friends, default_path				#Variables
+from modules import mail_from_address, smtplib, MIMEMultipart, MIMEText, s_features
 
 
 def startup():
@@ -121,15 +121,15 @@ class Fan(Switch):
 			return False
 		return True
 	
-class Play(thread.Thread):
-	def __init__(self, dir_n):
-		thread.Thread.__init__(self)
-		self.dir_name = dir_n
-	def run(self):
-		play_d(self.dir_name)
+#class Play(thread.Thread):
+#	def __init__(self, dir_n):
+#		thread.Thread.__init__(self)
+#		self.dir_name = dir_n
+#	def run(self):
+#		play_d(self.dir_name)
 
 def play_d(dir_name):
-	global music_path, default_path
+	global music_path, default_path, s_features
 	file_list = []
 	if dir_name and (dir_name != "songs"):
 		search = re.search('songs\\s?from?\\s?(.*)?|(.*)', dir_name)
@@ -152,14 +152,18 @@ def play_d(dir_name):
 			break
 	if file_list:
 		for i in file_list:
-			s_cmd = "vlc " + path +'/'+ i
-			print(s_cmd)
-			time.sleep(30)
-	#		os.system(s_cmd)
+			s_path = path +'/'+ i
+			print(s_path)
+#			p = process.Process(play_process(s_path), ())
+#			s_features["play"] = p
+			os.execlp("mpg123", "mpg123", s_path)
 	else:
 		Log("Album not found with name \""+dir_name+"\".").start()
 		Play_speech("Album "+dir_name+" not found").start()
 	return
+
+def play_process(path):
+	os.execlp("mpg123", "mpg123", path)
 
 def error_led():
 	global low, high, er_pin
@@ -254,13 +258,14 @@ def mail(message, to):
 
 def play_string(string):
 	t_data = time.localtime()
+	print (t_data)
 #	t_data[year, month_num, m_day, h, m, sec, w_day, y_day, isdst]
 	day = {0:'monday', 1:'tuesday', 2:'wednesday', 3:'thursday', 4:'friday', 5:'saturday', 6:'sunday'}
 	month = {1:"january", 2:"february", 3:"march", 4:"april", 5:"may", 6:"june", 7:"july", 8:"august", 9:"september", 10:"october", 11:"november", 12:"december"}
 	hours = t_data[3]
 	minutes = str(t_data[4])
 	if hours >= 12:
-		hours = str(hours-12)
+		hours = "12" if (hours-12)==0 else str(hours-12)
 		minutes = minutes +" PM"
 	elif not hours:
 		hours = str(12)
@@ -269,13 +274,10 @@ def play_string(string):
 		hours = str(hours)
 		minutes = minutes +" AM"
 	if string == 'time':
-		time_get = "time is "+hours+" "+minutes
-		Play_speech(time_get).start()
+		string = "time is "+hours+" "+minutes
 	elif string == 'day':
-		day_get = "today is, "+day[t_data[6]]+" "+str(t_data[2])+" "+month[t_data[1]]+" "+str(t_data[0])
-		Play_speech(day_get).start()
-	else:
-		Play_speech(string).start()
+		string = "today is, "+day[t_data[6]]+" "+str(t_data[2])+" "+month[t_data[1]]+" "+str(t_data[0])
+	Play_speech(string).start()
 
 class Play_speech(thread.Thread):
 	def __init__(self, msg, rep=0):

@@ -1,7 +1,7 @@
 
-from new_file import Switch, Play, Log, Fan, Play_speech, start_setup, E_mail, play_string
+from new_file import Switch, Log, play_d, Fan, Play_speech, start_setup, E_mail, play_string
 from modules import low, high, er_pin, dev_pins, ops, room, device, operation, water_v, play_v
-from modules import event, s_features, time, re
+from modules import event, s_features, time, re, process
 
 
 def analyze(temp):
@@ -62,16 +62,15 @@ def check():
 	else:
 		if event == "play":
 			if not s_features["play"]:
-				p = Play(operation)		#create play thread
+				p = process.Process(target=play_d, args=(operation,))
 				p.start()
-				time.sleep(2)
-				if p.isAlive():
-					print ("Running ...")
+				time.sleep(0.2)
+				if p.is_alive():
 					s_features["play"] = p
 				else:
 					s_features["play"] = None
 					Log("Unable to start play thread.").start()	#Create and run error thread
-			else:
+			elif s_features["play"].is_alive():
 				print ("Already playing...")
 		elif event == "send":
 			response = re.search('(.*)\\sto\\s.*?(\w+)', operation, re.I)
@@ -84,13 +83,13 @@ def check():
 		elif event == "day":
 			play_string("day")
 		elif event == "stop":
-			if s_features["play"] and s_features["play"].isAlive():
-				print ("running...")
-				s_features["play"]._Thread__stop
-				s_features["play"] = None
-				if s_features["play"].isAlive():
-					print ("alive")
+			if s_features["play"] and s_features["play"].is_alive():
+				s_features["play"].terminate()
+				time.sleep(0.5)
+				if s_features["play"].is_alive():	
 					Log("Unable to stop play thread.").start()
+				else:
+					s_features["play"] = None
 			elif operation == "motor":
 				water_v = low
 		elif event == "setup":

@@ -6,6 +6,7 @@ import wiringpi as pi
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import multiprocessing as process
 
 dev_pins = {"hall":{"light":{"pin":1, "obj":None}, "fan":{"pin":[2, 3], "obj":None}}, "others":{"light":{"pin":8, "obj":None}, "fan":{"pin":[6, 7], "obj":None}}}
 #dev_pins = {"hall":{"light":{"pin":1, "obj":None}, "tv":{"pin":4, "obj":None}, "cooler":{"pin":6, "obj":None}, "fan":{"pin":[2, 3], "obj":None}}, "kitchen":{"light":{"pin":7, "obj":None}, "exhaust":{"pin":[8, 9], "obj":None}}, "others":{"motor":{"pin":5, "obj":None}, "light":{"pin":8, "obj":None}, "fan":{"pin":[6, 7], "obj":None}}}
